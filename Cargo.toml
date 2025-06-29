@@ -1,6 +1,8 @@
 [package]
 name = "roguelike"
 version = "0.1.0"
+authors = ["Jaxon Adams"]
 edition = "2024"
 
 [dependencies]
+rltk = { version = "0.8.7" }
