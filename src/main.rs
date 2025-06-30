@@ -1,7 +1,6 @@
-use rltk::{GameState, RGB, Rltk, VirtualKeyCode};
+use rltk::{GameState, RGB, Rltk};
 use specs::prelude::*;
 use specs_derive::Component;
-use std::cmp::{max, min};
 
 #[derive(Component)]
 struct Position {
@@ -16,12 +15,39 @@ struct Renderable {
     bg: RGB,
 }
 
+#[derive(Component)]
+struct LeftMover {}
+
+struct LeftWalker {}
+impl<'a> System<'a> for LeftWalker {
+    type SystemData = (ReadStorage<'a, LeftMover>, WriteStorage<'a, Position>);
+
+    fn run(&mut self, (lefty, mut pos): Self::SystemData) {
+        for (_lefty, pos) in (&lefty, &mut pos).join() {
+            pos.x -= 1;
+            if pos.x < 0 {
+                pos.x = 79;
+            }
+        }
+    }
+}
+
 struct State {
     ecs: World,
+}
+impl State {
+    fn run_systems(&mut self) {
+        let mut lw = LeftWalker {};
+        lw.run_now(&self.ecs);
+        self.ecs.maintain();
+    }
 }
 impl GameState for State {
     fn tick(&mut self, ctx: &mut Rltk) {
         ctx.cls();
+
+        // Run systems
+        self.run_systems();
 
         // Draw entities
         let positions = self.ecs.read_storage::<Position>();
@@ -42,6 +68,7 @@ fn main() -> rltk::BError {
     let mut gs = State { ecs: World::new() };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
+    gs.ecs.register::<LeftMover>();
 
     // Create a player entity
     gs.ecs
@@ -64,6 +91,7 @@ fn main() -> rltk::BError {
                 fg: RGB::named(rltk::RED),
                 bg: RGB::named(rltk::BLACK),
             })
+            .with(LeftMover {})
             .build();
     }
 
