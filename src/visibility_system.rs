@@ -35,6 +35,8 @@ impl<'a> System<'a> for VisibilitySystem {
                     map.revealed_tiles[idx] = true;
                 }
             }
+
+            viewshed.dirty = false;
         }
     }
 }
