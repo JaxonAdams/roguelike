@@ -1,8 +1,6 @@
-use crate::Viewshed;
-
-use super::{Player, Rect};
+use super::Rect;
 use rltk::{Algorithm2D, BaseMap, Point, RGB, RandomNumberGenerator, Rltk};
-use specs::{WorldExt, prelude::*, rayon::vec};
+use specs::prelude::*;
 use std::cmp::{max, min};
 
 #[derive(PartialEq, Copy, Clone)]
