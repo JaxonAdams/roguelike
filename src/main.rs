@@ -1,6 +1,7 @@
 use rltk::{GameState, Point, RGB, Rltk};
 use specs::prelude::*;
 
+mod gamelog;
 mod gui;
 
 mod components;
@@ -138,6 +139,9 @@ fn main() -> rltk::BError {
     let (player_x, player_y) = map.rooms[0].center();
     gs.ecs.insert(Point::new(player_x, player_y));
     gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(gamelog::GameLog {
+        entries: vec!["Welcome to Jaxon's Roguelike!".to_string()],
+    });
 
     // Populate rooms with monsters
     let mut rng = rltk::RandomNumberGenerator::new();
