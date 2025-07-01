@@ -1,7 +1,7 @@
 use crate::WantsToMelee;
 
 use super::{CombatStats, Map, Player, Position, RunState, State, Viewshed};
-use rltk::{Point, Rltk, VirtualKeyCode, console};
+use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
 use std::cmp::{max, min};
 
