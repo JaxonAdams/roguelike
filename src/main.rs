@@ -120,7 +120,8 @@ impl GameState for State {
 fn main() -> rltk::BError {
     // Set up initial game context
     use rltk::RltkBuilder;
-    let context = RltkBuilder::simple80x50().with_title("Roguelike").build()?;
+    let mut context = RltkBuilder::simple80x50().with_title("Roguelike").build()?;
+    context.with_post_scanlines(true);
 
     // Create game state and register ECS components
     let mut gs = State { ecs: World::new() };
