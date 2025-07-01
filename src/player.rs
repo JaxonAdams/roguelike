@@ -1,6 +1,6 @@
-use crate::RunState;
+use crate::WantsToMelee;
 
-use super::{Map, Player, Position, State, Viewshed};
+use super::{CombatStats, Map, Player, Position, RunState, State, Viewshed};
 use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
 use std::cmp::{max, min};
@@ -9,10 +9,37 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
     let mut viewsheds = ecs.write_storage::<Viewshed>();
+    let mut wants_to_melee = ecs.write_storage::<WantsToMelee>();
+    let combat_stats = ecs.read_storage::<CombatStats>();
+    let entities = ecs.entities();
     let map = ecs.fetch::<Map>();
 
-    for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
+    for (entity, _player, pos, viewshed) in
+        (&entities, &mut players, &mut positions, &mut viewsheds).join()
+    {
+        if pos.x + delta_x < 1
+            || pos.x + delta_x > map.width - 1
+            || pos.y + delta_y < 1
+            || pos.y + delta_y > map.height - 1
+        {
+            return;
+        }
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
+
+        for potential_target in map.tile_content[destination_idx].iter() {
+            if let Some(_t) = combat_stats.get(*potential_target) {
+                wants_to_melee
+                    .insert(
+                        entity,
+                        WantsToMelee {
+                            target: *potential_target,
+                        },
+                    )
+                    .expect("Failed to add melee target");
+                return;
+            }
+        }
+
         if !map.blocked[destination_idx] {
             pos.x = min(79, max(0, pos.x + delta_x));
             pos.y = min(49, max(0, pos.y + delta_y));
@@ -28,7 +55,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player movement
     match ctx.key {
-        None => return RunState::PAUSED, // Nothing happened
+        None => return RunState::AwaitingInput, // Nothing happened
         Some(key) => match key {
             VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => {
                 try_move_player(-1, 0, &mut gs.ecs)
@@ -62,8 +89,8 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
                 try_move_player(-1, 1, &mut gs.ecs);
             }
 
-            _ => return RunState::PAUSED,
+            _ => return RunState::AwaitingInput,
         },
     }
-    RunState::RUNNING
+    RunState::PlayerTurn
 }
