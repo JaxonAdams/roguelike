@@ -32,6 +32,9 @@ pub use melee_combat_system::MeleeCombatSystem;
 mod damage_system;
 pub use damage_system::DamageSystem;
 
+mod inventory_system;
+pub use inventory_system::ItemCollectionSystem;
+
 use crate::gui::draw_ui;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -62,6 +65,9 @@ impl State {
 
         let mut dmg_sys = DamageSystem {};
         dmg_sys.run_now(&self.ecs);
+
+        let mut pickup_system = ItemCollectionSystem {};
+        pickup_system.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -138,6 +144,8 @@ fn main() -> rltk::BError {
     gs.ecs.register::<SufferDamage>();
     gs.ecs.register::<Item>();
     gs.ecs.register::<HealingPotion>();
+    gs.ecs.register::<InBackpack>();
+    gs.ecs.register::<WantsToPickUpItem>();
 
     let map: Map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
