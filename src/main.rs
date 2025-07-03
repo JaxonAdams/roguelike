@@ -43,6 +43,7 @@ pub enum RunState {
     PreRun,
     PlayerTurn,
     MonsterTurn,
+    ShowInventory,
 }
 
 pub struct State {
@@ -83,6 +84,7 @@ impl GameState for State {
             newrunstate = *runstate;
         }
 
+        // Run game systems and update state
         match newrunstate {
             RunState::PreRun => {
                 self.run_systems();
@@ -99,28 +101,46 @@ impl GameState for State {
                 self.run_systems();
                 newrunstate = RunState::AwaitingInput;
             }
+            RunState::ShowInventory => {
+                // Render will happen *after* entity drawing
+            }
         }
 
         {
             let mut runwriter = self.ecs.write_resource::<RunState>();
             *runwriter = newrunstate;
         }
-        damage_system::delete_the_dead(&mut self.ecs);
 
+        // Render game map and entities
         draw_map(&self.ecs, ctx);
 
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<Map>();
+        {
+            let positions = self.ecs.read_storage::<Position>();
+            let renderables = self.ecs.read_storage::<Renderable>();
+            let map = self.ecs.fetch::<Map>();
 
-        for (pos, render) in (&positions, &renderables).join() {
-            let idx = map.xy_idx(pos.x, pos.y);
-            if map.visible_tiles[idx] {
-                ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            for (pos, render) in (&positions, &renderables).join() {
+                let idx = map.xy_idx(pos.x, pos.y);
+                if map.visible_tiles[idx] {
+                    ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+                }
             }
         }
 
         draw_ui(&self.ecs, ctx);
+
+        match newrunstate {
+            RunState::ShowInventory => {
+                let result = gui::show_inventory(self, ctx);
+                if result == gui::ItemMenuResult::Cancel {
+                    let mut runwriter = self.ecs.write_resource::<RunState>();
+                    *runwriter = RunState::AwaitingInput;
+                }
+            }
+            _ => {}
+        }
+
+        damage_system::delete_the_dead(&mut self.ecs);
     }
 }
 
