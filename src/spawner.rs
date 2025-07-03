@@ -1,6 +1,42 @@
-use super::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
+use std::usize;
+
+use crate::MAPWIDTH;
+
+use super::{CombatStats, Monster, Name, Player, Position, Rect, Renderable, Viewshed};
 use rltk::{RGB, RandomNumberGenerator};
 use specs::prelude::*;
+
+const MAX_MONSTERS_PER_ROOM: i32 = 4;
+const MAX_ITEMS_PER_ROOM: i32 = 2;
+
+/// Spawn a room with monsters and items.
+pub fn spawn_room(ecs: &mut World, room: &Rect) {
+    let mut monster_spawner_points: Vec<usize> = Vec::new();
+
+    {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        let num_monsters = rng.roll_dice(1, MAX_MONSTERS_PER_ROOM + 2) - 3;
+
+        for _i in 0..num_monsters {
+            let mut added = false;
+            while !added {
+                let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
+                let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
+                let idx = (y * MAPWIDTH) + x;
+                if !monster_spawner_points.contains(&idx) {
+                    monster_spawner_points.push(idx);
+                    added = true;
+                }
+            }
+        }
+    }
+
+    for idx in monster_spawner_points.iter() {
+        let x = *idx % MAPWIDTH;
+        let y = *idx / MAPWIDTH;
+        random_monster(ecs, x as i32, y as i32);
+    }
+}
 
 /// Spawn the player and return their entity object.
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
